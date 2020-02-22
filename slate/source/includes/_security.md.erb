@@ -198,7 +198,7 @@ grant_type=authorization_code&
 
 The `private_key_jwt` authentication method is enabled through the delivery of an encoded **[JWT]** signed using the Data Recipient's private key and thus facilitates non-repudiation.
 
-Client public keys MUST only be obtained from the CDR Register.
+Client public keys are obtained from the **[JWKS]** endpoints.
 
 The **[JWT]** represents an assertion that MUST include the following claims:
 
@@ -242,8 +242,6 @@ CDR Register public keys MUST only be obtained from the end point exposed for th
 Consent requirements will be communicated between the Data Recipient and Data Holder via the authorisation request object.  The primary mechanism for capturing consent will be scopes and claims under **[OIDC]**.
 
 Other patterns for the establishment of consent may be considered in the future, including the incorporation of fine-grained consent for specific use cases.
-
-A data holder MUST support only one extant consent arrangement (being an arrangement between a single Customer, a single Data Recipient and a single Data Holder) at a time.  If a second consent is authorised then the tokens associated with the previous consent MUST be revoked.
 
 ## Scopes and Claims
 
@@ -392,7 +390,7 @@ End points for transferring CDR Data that are classified as not requiring authen
 
 **[MTLS]** MUST be supported as a Holder of Key (HoK) Mechanism.
 
-Note that, by implication, resource requests MUST be validated to ensure the client certificate and access token match.  This is an equivalent position to section 6.2.1 of the UK Open Banking Information Security Profile.
+Note that, by implication, resource requests MUST be validated to ensure the client certificate and access token match.
 
 OAUTB SHALL NOT be supported due to a lack industry support.
 
@@ -438,7 +436,7 @@ Cross-origin resource sharing (CORS) must be enabled (ie. `Access-Control-Allow-
   "state": "af0ifjsldkj",
   "nonce": "n-0S6_WzA2Mj",
   "claims": {
-    "sharing_duration": "7776000",
+    "sharing_duration": 7776000,
     "id_token": {
       "acr": {
         "essential": true,
@@ -459,11 +457,12 @@ Request Objects MUST be signed by Data Recipients as specified in [section 8.6](
 
 Request Object references SHALL NOT be supported.
 
-## Requesting Sharing Duration
+### Requesting Sharing Duration
 To facilitate the specification of the duration for consent to share CDR data that is approved by the consumer, a mechanism for the Data Recipient to specify a sharing duration to the Data Holder is required.
 
 To accomplish this, the Data Holder MUST support an additional claim in the authorisation request object named `sharing_duration`.  The `sharing_duration` claim MUST be handled as follows:
 
+- The `sharing_duration` parameter is a number
 - The value of the `sharing_duration` parameter will contain the requested duration for sharing, in seconds.
 - If the `sharing_duration` value exceeds one year then a duration of one year will be assumed.
 - If the `sharing_duration` value is zero or absent then once off access will be assumed and only an Access Token (without a Refresh Token) will be provided on successful authorisation.
@@ -473,14 +472,20 @@ Note that the period of `one year` in the above statements should be interpreted
 
 The Data Recipient is able to obtain the expiration of sharing via the `sharing_expires_at` claim.
 
+### Specifying An Existing Refresh Token
+To allow for an existing consent to be reliably revoked upon the establishment of a new consent intended as a replacement data holders MUST support an additional claim in the authorisation request object named `existing_refresh_token` that the data recipient may optionally include with the value set to the active refresh token for an existing consent.
+
+The `existing_refresh_token` claim MUST be handled as follows:
+
+- **Until November 2020** data holders are not required to take any action if `existing_refresh_token` is supplied but MUST NOT respond with an error.
+- **From November 2020** data holders MUST revoke a token provided in the `existing_refresh_token` claim in the request object once the new consent is successfully established and a new set of tokens has been provided to the data recipient.
+- **Until November 2020** data recipients MUST NOT implement scenarios that support concurrent consent.  Only single, extant consent scenarios should be implemented until this date.
+- **Until November 2020** data recipients MUST actively revoke previously supplied refresh tokens, immediately after receiving the tokens for a newly established consent, using the revocation end point.
+
 
 ## End Points
 <aside class="warning">
 NOTE: This section does not yet include any end points that will be defined by the design of the CDR Register.  This includes end points related to Data Recipient registration, certificate revocation, Data Recipient discovery or Data Holder discovery.
-</aside>
-
-<aside class="notice">
-NOTE: Where an end point in this section requires TLS only the certificate used is to be provisioned by the CDR CA
 </aside>
 
 ### OpenID Provider Configuration End Point
@@ -537,6 +542,7 @@ At a minimum, the Data Holder metadata MUST include:
 - `introspection_endpoint`: URL of the Introspection End Point.
 - `revocation_endpoint`: URL of the Revocation End Point.
 - `userinfo_endpoint`: URL of the UserInfo End Point.
+- `registration_endpoint`: URL of the Client Registration End Point.
 - `scopes_supported`:  This list of supported scopes.
 - `claims_supported`:  The list of supported claims.
 - `acr_values_supported`:  The supported ACR values.
@@ -577,7 +583,7 @@ Host: www.holder.com.au
   "state": "af0ifjsldkj",
   "nonce": "n-0S6_WzA2Mj",
   "claims": {
-    "sharing_duration": "7776000",
+    "sharing_duration": 7776000,
     "userinfo": {
       "given_name": null,
       "family_name": null
@@ -595,7 +601,7 @@ Host: www.holder.com.au
 | Description | Value   |
 |---|---|
 | Hosted By  | Data Holder  |
-|  Transport Security |  TLS |
+| Transport Security | TLS |
 | Client Authentication Required| No|
 | Bearer Token Required| No|
 
@@ -605,7 +611,7 @@ The requirements for the Authorisation End Point are specified in [section 3.3.2
 ### JSON Web Key Set End Point
 | Description | Value   |
 |---|---|
-| Hosted By  | Data Holder  |
+| Hosted By  | Data Holder & Data Recipient  |
 |  Transport Security |  TLS |
 | Client Authentication Required| No|
 | Bearer Token Required| No|
@@ -697,23 +703,23 @@ If consent is withdrawn by a Customer in writing or by using the Data Recipientâ
 
 | **Reference**  | **Description**  | **Version** |
 | --- | --- | --- |
-| <a id="FAPI-R"></a>**[FAPI-R]**   | Financial-grade API - Part 1: Read Only API Security Profile: <https://openid.net/specs/openid-financial-api-part-1.html>                                                      |Draft-06
+| <a id="FAPI-R"></a>**[FAPI-R]**    | Financial-grade API - Part 1: Read Only API Security Profile: <https://openid.net/specs/openid-financial-api-part-1.html>                                                     |Draft-06
 | <a id="FAPI-RW"></a>**[FAPI-RW]**  | Financial-grade API - Part 2: Read and Write API Security Profile: <https://openid.net/specs/openid-financial-api-part-2.html>                                                |Draft-06
-| <a id="JSON"></a>**[JSON]**     | The JavaScript Object Notation (JSON) Data Interchange Format: <https://tools.ietf.org/html/rfc8259>                                                                             |RFC8259
-| <a id="JWA"></a>**[JWA]**      | JSON Web Algorithms (JWA): <https://tools.ietf.org/html/draft-ietf-jose-json-web-algorithms-40>                                                                                   |Jan 2015
-| <a id="JWK"></a>**[JWK]**      | JSON Web Key (JWK): <https://tools.ietf.org/html/rfc7517>                                                                                                                         |RFC7517
-| <a id="JWT"></a>**[JWT]**      | JSON Web Token (JWT): <https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32>                                                                                            |Dec 2014
-| <a id="JWS"></a>**[JWS]**      | JSON Web Signature (JWS): <http://tools.ietf.org/html/draft-ietf-jose-json-web-signature>                                                                                         |Jan 2015
-| <a id="JWE"></a>**[JWE]**      | JSON Web Encryption (JWE): <http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption>                                                                                       |Jan 2015
-| <a id="MTLS"></a>**[MTLS]**     | OAuth 2.0 Mutual TLS Client Authentication and Certificate Bound Access Tokens: <https://tools.ietf.org/id/draft-ietf-oauth-mtls-07.html>                                        |Jan 2018
-| <a id="OAUTH2"></a>**[OAUTH2]**   | The OAuth 2.0 Authorization Framework: <https://tools.ietf.org/html/rfc6749>                                                                                                   |RFC6749
-| <a id="OIDC"></a>**[OIDC]**     | OpenID Connect Core 1.0 incorporating errata set 1: <http://openid.net/specs/openid-connect-core-1_0.html>                                                                       |Nov 2014
-| <a id="OIDD"></a>**[OIDD]**     | OpenID Connect Discovery 1.0 incorporating errata set 1: <http://openid.net/specs/openid-connect-discovery-1_0.html>                                                             |Nov 2014
-| <a id="TDIF"></a>**[TDIF]** | Digital Transformation Agency - Trusted Digital Identity Framework <https://www.dta.gov.au/our-projects/digital-identity/join-identity-federation/accreditation-and-onboarding/trusted-digital-identity-framework>|April 2019
-| <a id="RFC2119"></a>**[RFC2119]**  | Key words for use in RFCs to Indicate Requirement Levels <https://tools.ietf.org/html/rfc2119>                                                                                |RFC2119
-| <a id="RFC7009"></a>**[RFC7009]**  | OAuth 2.0 Token Revocation: <https://tools.ietf.org/html/rfc7009>                                                                                                             |RFC7009
-| <a id="RFC7523"></a>**[RFC7523]**  | JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants: <https://tools.ietf.org/html/rfc7523>                                              |RFC7523
-| <a id="RFC7662"></a>**[RFC7662]**  | OAuth 2.0 Token Introspection: <https://tools.ietf.org/html/rfc7662>                                                                                                          |RFC7662
+| <a id="JSON"></a>**[JSON]**        | The JavaScript Object Notation (JSON) Data Interchange Format: <https://tools.ietf.org/html/rfc8259>                                                                          |Dec 2017
+| <a id="JWA"></a>**[JWA]**          | JSON Web Algorithms (JWA): <https://tools.ietf.org/html/rfc7518>                                                                                                              |May 2015
+| <a id="JWK"></a>**[JWK]**          | JSON Web Key (JWK): <https://tools.ietf.org/html/rfc7517>                                                                                                                     |May 2015
+| <a id="JWT"></a>**[JWT]**          | JSON Web Token (JWT): <https://tools.ietf.org/html/rfc7519>                                                                                                                   |May 2015
+| <a id="JWS"></a>**[JWS]**          | JSON Web Signature (JWS): <https://tools.ietf.org/html/rfc7797>                                                                                                               |Feb 2016
+| <a id="JWE"></a>**[JWE]**          | JSON Web Encryption (JWE): <https://tools.ietf.org/html/rfc7516>                                                                                                              |May 2015
+| <a id="MTLS"></a>**[MTLS]**        | OAuth 2.0 Mutual TLS Client Authentication and Certificate Bound Access Tokens: <https://tools.ietf.org/html/draft-ietf-oauth-mtls-17>                                        |Aug 2019
+| <a id="OAUTH2"></a>**[OAUTH2]**    | The OAuth 2.0 Authorization Framework: <https://tools.ietf.org/html/rfc6749>                                                                                                  |Oct 2012
+| <a id="OIDC"></a>**[OIDC]**        | OpenID Connect Core 1.0 incorporating errata set 1: <http://openid.net/specs/openid-connect-core-1_0.html>                                                                    |Nov 2014
+| <a id="OIDD"></a>**[OIDD]**        | OpenID Connect Discovery 1.0 incorporating errata set 1: <http://openid.net/specs/openid-connect-discovery-1_0.html>                                                          |Nov 2014
+| <a id="TDIF"></a>**[TDIF]**        | Digital Transformation Agency - Trusted Digital Identity Framework <https://www.dta.gov.au/our-projects/digital-identity/join-identity-federation/accreditation-and-onboarding/trusted-digital-identity-framework>|Apr 2019
+| <a id="RFC2119"></a>**[RFC2119]**  | Key words for use in RFCs to Indicate Requirement Levels <https://tools.ietf.org/html/rfc2119>                                                                                |Mar 1997
+| <a id="RFC7009"></a>**[RFC7009]**  | OAuth 2.0 Token Revocation: <https://tools.ietf.org/html/rfc7009>                                                                                                             |Aug 2013
+| <a id="RFC7523"></a>**[RFC7523]**  | JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants: <https://tools.ietf.org/html/rfc7523>                                              |May 2015
+| <a id="RFC7662"></a>**[RFC7662]**  | OAuth 2.0 Token Introspection: <https://tools.ietf.org/html/rfc7662>                                                                                                          |Oct 2015
 
 ## Informative References
 
