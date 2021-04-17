@@ -9,7 +9,17 @@
 </tr>
 </thead><tbody>
 <tr>
-<td><a href='./archive/standards-1.4.0/docs/'>22/5/2020</a></td>
+<td><a href='./archive/standards-1.5.1/docs/'>25/9/2020</a></td>
+<td>1.5.1</td>
+<td><a href='./archive/standards-1.5.1/docs/'>Revert 1.5.0 CRN update</a></td>
+</tr>
+<tr>
+<td><a href='./archive/standards-1.5.0/docs/'>16/9/2020</a></td>
+<td>1.5.0</td>
+<td><a href='./archive/standards-1.5.0/docs/'>Banking Maintenance Iteration 4 Release</a></td>
+</tr>
+<tr>
+<td><a href='./archive/standards-1.4.0/docs/'>12/8/2020</a></td>
 <td>1.4.0</td>
 <td><a href='./archive/standards-1.4.0/docs/'>Banking Maintenance Iteration 3 Release</a></td>
 </tr>
