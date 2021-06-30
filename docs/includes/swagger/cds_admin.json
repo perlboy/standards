@@ -1,13 +1,13 @@
 {
   "swagger" : "2.0",
   "info" : {
-    "description" : "Data Holder Consumer Data Standards Administration End Points",
-    "version" : "1.3.0",
+    "description" : "Data Holder Consumer Data Standards Administration End Points created by the Data Standards Body (DSB), with the Data Standards Chair as the decision maker",
+    "version" : "1.10.0",
     "title" : "Consumer Data Standards Administration End Points",
     "contact" : {
       "name" : "Consumer Data Standards Administration End Points",
-      "url" : "https://consumerdatastandards.org.au/",
-      "email" : "cdr-data61@csiro.au"
+      "url" : "https://consumerdatastandards.gov.au",
+      "email" : "contact@consumerdatastandards.gov.au"
     },
     "license" : {
       "name" : "MIT License",
@@ -42,7 +42,7 @@
         }, {
           "name" : "x-min-v",
           "in" : "header",
-          "description" : "Minimum version of the API end point requested by the client. Must be set to a positive integer if provided. The data holder should respond with the highest supported version between [x-min-v](##request-headers) and [x-v](##request-headers). If all versions requested are not supported then the data holder should respond with a 406 Not Acceptable.",
+          "description" : "Minimum version of the API end point requested by the client. Must be set to a positive integer if provided. The data holder should respond with the highest supported version between [x-min-v](#request-headers) and [x-v](#request-headers). If all versions requested are not supported then the data holder should respond with a 406 Not Acceptable.",
           "required" : false,
           "type" : "string"
         } ],
@@ -52,11 +52,19 @@
             "headers" : {
               "x-v" : {
                 "type" : "string",
-                "description" : "The [version](##response-headers) of the API end point that the data holder has responded with."
+                "description" : "The [version](#response-headers) of the API end point that the data holder has responded with."
               }
+            }
+          },
+          "4xx" : {
+            "description" : "The following error codes MUST be supported:<br/><ul class=\"error-code-list\"><li>[400 - Invalid Field](#error-400-field-invalid)</li><li>[400 - Invalid Version](#error-400-header-invalid-version)</li><li>[406 - Unsupported Version](#error-406-header-unsupported-version)</li></ul>",
+            "schema" : {
+              "$ref" : "#/definitions/ResponseErrorListV2"
             }
           }
         },
+        "x-scopes" : [ "admin:metadata:update" ],
+        "x-restricted-access" : true,
         "x-version" : "1"
       }
     },
@@ -64,7 +72,7 @@
       "get" : {
         "tags" : [ "Admin", "Metrics" ],
         "summary" : "Get Metrics",
-        "description" : "This end point allows the ACCC to obtain operational statistics from the Data Holder on the operation of their CDR compliant implementation. The statistics obtainable from this end point are determined by the non-functional requirements for the CDR regime.\n\nNOTE: This version must be implemented by **July 31st 2021**\n\nObsolete versions: [v1](includes/obsolete/get-metrics-v1.html)",
+        "description" : "This end point allows the ACCC to obtain operational statistics from the Data Holder on the operation of their CDR compliant implementation. The statistics obtainable from this end point are determined by the non-functional requirements for the CDR regime.\n\nNOTE: This version must be implemented by **July 31st 2021**\n\nObsolete versions: [v1](includes/obsolete/get-metrics-v1.html). If the Data Holder supports private_key_jwt client authentication they MUST validate the scope.",
         "operationId" : "getMetrics",
         "parameters" : [ {
           "name" : "period",
@@ -83,7 +91,7 @@
         }, {
           "name" : "x-min-v",
           "in" : "header",
-          "description" : "Minimum version of the API end point requested by the client. Must be set to a positive integer if provided. The data holder should respond with the highest supported version between [x-min-v](##request-headers) and [x-v](##request-headers). If all versions requested are not supported then the data holder should respond with a 406 Not Acceptable.",
+          "description" : "Minimum version of the API end point requested by the client. Must be set to a positive integer if provided. The data holder should respond with the highest supported version between [x-min-v](#request-headers) and [x-v](#request-headers). If all versions requested are not supported then the data holder should respond with a 406 Not Acceptable.",
           "required" : false,
           "type" : "string"
         } ],
@@ -99,8 +107,16 @@
             "schema" : {
               "$ref" : "#/definitions/ResponseMetricsListV2"
             }
+          },
+          "4xx" : {
+            "description" : "The following error codes MUST be supported:<br/><ul class=\"error-code-list\"><li>[400 - Invalid Field](#error-400-field-invalid)</li><li>[400 - Invalid Version](#error-400-header-invalid-version)</li><li>[406 - Unsupported Version](#error-406-header-unsupported-version)</li></ul>",
+            "schema" : {
+              "$ref" : "#/definitions/ResponseErrorListV2"
+            }
           }
         },
+        "x-scopes" : [ "admin:metrics.basic:read" ],
+        "x-restricted-access" : true,
         "x-version" : "2"
       }
     }
@@ -171,6 +187,7 @@
     },
     "InvocationMetrics" : {
       "type" : "object",
+      "required" : [ "highPriority", "largePayload", "lowPriority", "unattended", "unauthenticated" ],
       "properties" : {
         "unauthenticated" : {
           "$ref" : "#/definitions/InvocationMetrics_unauthenticated"
@@ -188,11 +205,11 @@
           "$ref" : "#/definitions/InvocationMetrics_largePayload"
         }
       },
-      "description" : "Number of API calls in each performance tier over time",
-      "x-conditional" : [ "unauthenticated", "highPriority", "lowPriority", "unattended", "largePayload" ]
+      "description" : "Number of API calls in each performance tier over time"
     },
     "AverageResponseMetrics" : {
       "type" : "object",
+      "required" : [ "highPriority", "largePayload", "lowPriority", "unattended", "unauthenticated" ],
       "properties" : {
         "unauthenticated" : {
           "$ref" : "#/definitions/AverageResponseMetrics_unauthenticated"
@@ -210,8 +227,7 @@
           "$ref" : "#/definitions/AverageResponseMetrics_largePayload"
         }
       },
-      "description" : "Average response time in seconds, at millisecond resolution, within each performance tier",
-      "x-conditional" : [ "unauthenticated", "highPriority", "lowPriority", "unattended", "largePayload" ]
+      "description" : "Average response time in seconds, at millisecond resolution, within each performance tier"
     },
     "SessionCountMetrics" : {
       "properties" : {
@@ -282,6 +298,7 @@
       "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "RejectionMetricsV2" : {
+      "required" : [ "authenticated", "unauthenticated" ],
       "properties" : {
         "authenticated" : {
           "$ref" : "#/definitions/RejectionMetricsV2_authenticated"
@@ -290,8 +307,7 @@
           "$ref" : "#/definitions/RejectionMetricsV2_unauthenticated"
         }
       },
-      "description" : "Number of calls rejected due to traffic thresholds over time",
-      "x-conditional" : [ "currentDay", "previousDays" ]
+      "description" : "Number of calls rejected due to traffic thresholds over time"
     },
     "Links" : {
       "type" : "object",
@@ -308,6 +324,7 @@
       "type" : "object"
     },
     "RequestMetaDataUpdate_data" : {
+      "type" : "object",
       "required" : [ "action" ],
       "properties" : {
         "action" : {
@@ -319,7 +336,8 @@
       }
     },
     "ResponseMetricsListV2_data" : {
-      "required" : [ "requestTime" ],
+      "type" : "object",
+      "required" : [ "availability", "averageResponse", "averageTps", "customerCount", "errors", "invocations", "peakTps", "performance", "recipientCount", "rejections", "requestTime", "sessionCount" ],
       "properties" : {
         "requestTime" : {
           "type" : "string",
@@ -364,6 +382,7 @@
       }
     },
     "InvocationMetrics_unauthenticated" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -377,9 +396,11 @@
           }
         }
       },
-      "description" : "API call counts for the unauthenticated tier"
+      "description" : "API call counts for the unauthenticated tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "InvocationMetrics_highPriority" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -393,9 +414,11 @@
           }
         }
       },
-      "description" : "API call counts for the high priority tier"
+      "description" : "API call counts for the high priority tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "InvocationMetrics_lowPriority" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -409,9 +432,11 @@
           }
         }
       },
-      "description" : "API call counts for the low priority tier"
+      "description" : "API call counts for the low priority tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "InvocationMetrics_unattended" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -425,9 +450,11 @@
           }
         }
       },
-      "description" : "API call counts for the unattended tier"
+      "description" : "API call counts for the unattended tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "InvocationMetrics_largePayload" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -441,9 +468,11 @@
           }
         }
       },
-      "description" : "API call counts for the large payload tier"
+      "description" : "API call counts for the large payload tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "AverageResponseMetrics_unauthenticated" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -457,9 +486,11 @@
           }
         }
       },
-      "description" : "Average response time for the unauthenticated tier"
+      "description" : "Average response time for the unauthenticated tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "AverageResponseMetrics_highPriority" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -473,9 +504,11 @@
           }
         }
       },
-      "description" : "Average response time for the high priority tier"
+      "description" : "Average response time for the high priority tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "AverageResponseMetrics_lowPriority" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -489,9 +522,11 @@
           }
         }
       },
-      "description" : "Average response time for the low priority tier"
+      "description" : "Average response time for the low priority tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "AverageResponseMetrics_unattended" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -505,9 +540,11 @@
           }
         }
       },
-      "description" : "Average response time for the unattended tier"
+      "description" : "Average response time for the unattended tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "AverageResponseMetrics_largePayload" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -521,9 +558,11 @@
           }
         }
       },
-      "description" : "Average response time for the large payload tier"
+      "description" : "Average response time for the large payload tier",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "RejectionMetricsV2_authenticated" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -537,9 +576,11 @@
           }
         }
       },
-      "description" : "Rejection counts for all authenticated end points"
+      "description" : "Rejection counts for all authenticated end points",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     },
     "RejectionMetricsV2_unauthenticated" : {
+      "type" : "object",
       "properties" : {
         "currentDay" : {
           "type" : "number",
@@ -553,7 +594,8 @@
           }
         }
       },
-      "description" : "Rejection counts for all uauthenticated end points"
+      "description" : "Rejection counts for all uauthenticated end points",
+      "x-conditional" : [ "currentDay", "previousDays" ]
     }
   },
   "parameters" : {
@@ -567,7 +609,7 @@
     "RequestHeader_x-min-v" : {
       "name" : "x-min-v",
       "in" : "header",
-      "description" : "Minimum version of the API end point requested by the client. Must be set to a positive integer if provided. The data holder should respond with the highest supported version between [x-min-v](##request-headers) and [x-v](##request-headers). If all versions requested are not supported then the data holder should respond with a 406 Not Acceptable.",
+      "description" : "Minimum version of the API end point requested by the client. Must be set to a positive integer if provided. The data holder should respond with the highest supported version between [x-min-v](#request-headers) and [x-v](#request-headers). If all versions requested are not supported then the data holder should respond with a 406 Not Acceptable.",
       "required" : false,
       "type" : "string"
     }
